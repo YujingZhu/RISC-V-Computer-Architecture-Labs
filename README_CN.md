@@ -171,15 +171,15 @@ mstatus |= MSTATUS_MIE         // 全局中断使能
 
 **轮询模式 (Polling)**：
 
-$$L_{\text{poll}} = \frac{T_{\text{loop}}}{2} = \frac{56}{2} = 28 \text{ 周期}$$
+$$L_{\mathrm{poll}} = \frac{T_{\mathrm{loop}}}{2} = \frac{56}{2} = 28 \text{ 周期}$$
 
-$$\eta_{\text{CPU}} = \frac{T_{\text{useful}}}{T_{\text{total}}} \approx 1\%$$
+$$\eta_{\mathrm{CPU}} = \frac{T_{\mathrm{useful}}}{T_{\mathrm{total}}} \approx 1\%$$
 
 **中断驱动模式 (Interrupt-Driven)**：
 
-$$L_{\text{int}} = T_{\text{hw\_latch}} + T_{\text{context\_save}} + T_{\text{dispatch}} \approx 59 \text{ 周期}$$
+$$L_{\mathrm{int}} = T_{\mathrm{hwlatch}} + T_{\mathrm{ctxsave}} + T_{\mathrm{dispatch}} \approx 59 \text{ 周期}$$
 
-$$\eta_{\text{CPU}} = 1 - \frac{N_{\text{events}} \cdot T_{\text{ISR}}}{T_{\text{total}}} > 99\%$$
+$$\eta_{\mathrm{CPU}} = 1 - \frac{N_{\mathrm{events}} \cdot T_{\mathrm{ISR}}}{T_{\mathrm{total}}} > 99\%$$
 
 ### 对比总结
 
@@ -217,7 +217,7 @@ $$\eta_{\text{CPU}} = 1 - \frac{N_{\text{events}} \cdot T_{\text{ISR}}}{T_{\text
 | **CPI（每指令周期数）** | **1.915** |
 | **IPC（每周期指令数）** | **0.522** |
 
-$$\text{CPI} = \frac{\text{Cycles}}{\text{Instructions}} = \frac{1{,}756{,}951{,}756}{917{,}399{,}219} = 1.915$$
+$$\mathrm{CPI} = \frac{\mathrm{Cycles}}{\mathrm{Instructions}} = \frac{1{,}756{,}951{,}756}{917{,}399{,}219} = 1.915$$
 
 > **分析**：CPI = 1.915 表明平均每条指令消耗近 2 个周期 —— 二级流水线的理想值为 CPI = 1.0。0.915 周期/指令的差距主要由流水线停顿（Pipeline Stall）导致。
 
@@ -278,13 +278,13 @@ wire disp_no_stall_rs2 = oitfrd_match_disprs2 & (~fwd_rs2_en);
 
 #### 前递条件（布尔逻辑）
 
-$$\text{fwd\_en} = V_{\text{wb}} \wedge (R_{\text{dst}} = R_{\text{src}}) \wedge (R_{\text{dst}} \neq \texttt{x0}) \wedge \neg F_{\text{fpu}}$$
+$$\mathrm{fwd{\_}en} = V_{\mathrm{wb}} \wedge (R_{\mathrm{dst}} = R_{\mathrm{src}}) \wedge (R_{\mathrm{dst}} \neq \texttt{x0}) \wedge \neg F_{\mathrm{fpu}}$$
 
 其中：
-- $V_{\text{wb}}$：写回阶段有有效数据
-- $R_{\text{dst}} = R_{\text{src}}$：目标寄存器与源操作数匹配
-- $R_{\text{dst}} \neq \texttt{x0}$：排除硬连线零寄存器
-- $\neg F_{\text{fpu}}$：整数寄存器（非浮点）
+- $V_{\mathrm{wb}}$ ：写回阶段有有效数据
+- $R_{\mathrm{dst}} = R_{\mathrm{src}}$ ：目标寄存器与源操作数匹配
+- $R_{\mathrm{dst}} \neq \texttt{x0}$ ：排除硬连线零寄存器
+- $\neg F_{\mathrm{fpu}}$ ：整数寄存器（非浮点）
 
 > **结果**：前递路径将 Load-Use 停顿从强制 1 周期惩罚转变为零周期旁路，直接推动 CPI 向理论最小值 1.0 逼近。
 

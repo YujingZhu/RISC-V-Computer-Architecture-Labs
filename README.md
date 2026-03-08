@@ -176,15 +176,15 @@ The fundamental latency model for each paradigm:
 
 **Polling**:
 
-$$L_{\text{poll}} = \frac{T_{\text{loop}}}{2} = \frac{56}{2} = 28 \text{ cycles}$$
+$$L_{\mathrm{poll}} = \frac{T_{\mathrm{loop}}}{2} = \frac{56}{2} = 28 \text{ cycles}$$
 
-$$\eta_{\text{CPU}} = \frac{T_{\text{useful}}}{T_{\text{total}}} \approx 1\%$$
+$$\eta_{\mathrm{CPU}} = \frac{T_{\mathrm{useful}}}{T_{\mathrm{total}}} \approx 1\%$$
 
 **Interrupt-Driven**:
 
-$$L_{\text{int}} = T_{\text{hw\_latch}} + T_{\text{context\_save}} + T_{\text{dispatch}} \approx 59 \text{ cycles}$$
+$$L_{\mathrm{int}} = T_{\mathrm{hwlatch}} + T_{\mathrm{ctxsave}} + T_{\mathrm{dispatch}} \approx 59 \text{ cycles}$$
 
-$$\eta_{\text{CPU}} = 1 - \frac{N_{\text{events}} \cdot T_{\text{ISR}}}{T_{\text{total}}} > 99\%$$
+$$\eta_{\mathrm{CPU}} = 1 - \frac{N_{\mathrm{events}} \cdot T_{\mathrm{ISR}}}{T_{\mathrm{total}}} > 99\%$$
 
 ### Comparative Summary
 
@@ -222,7 +222,7 @@ Performance counters read via inline assembly (`csrr` on `mcycle`/`minstret`):
 | **CPI** | **1.915** |
 | **IPC** | **0.522** |
 
-$$\text{CPI} = \frac{\text{Cycles}}{\text{Instructions}} = \frac{1{,}756{,}951{,}756}{917{,}399{,}219} = 1.915$$
+$$\mathrm{CPI} = \frac{\mathrm{Cycles}}{\mathrm{Instructions}} = \frac{1{,}756{,}951{,}756}{917{,}399{,}219} = 1.915$$
 
 > **Analysis**: CPI = 1.915 indicates that on average each instruction takes nearly 2 cycles — the ideal for a 2-stage pipeline is CPI = 1.0. The gap of 0.915 cycles/instruction is dominated by pipeline stalls.
 
@@ -283,13 +283,13 @@ With Forwarding (Bypass):
 
 #### Forwarding Conditions (Boolean Logic)
 
-$$\text{fwd\_en} = V_{\text{wb}} \wedge (R_{\text{dst}} = R_{\text{src}}) \wedge (R_{\text{dst}} \neq \texttt{x0}) \wedge \neg F_{\text{fpu}}$$
+$$\mathrm{fwd{\_}en} = V_{\mathrm{wb}} \wedge (R_{\mathrm{dst}} = R_{\mathrm{src}}) \wedge (R_{\mathrm{dst}} \neq \texttt{x0}) \wedge \neg F_{\mathrm{fpu}}$$
 
 Where:
-- $V_{\text{wb}}$: Write-back stage has valid data
-- $R_{\text{dst}} = R_{\text{src}}$: Destination register matches the source operand
-- $R_{\text{dst}} \neq \texttt{x0}$: Exclude hardwired zero register
-- $\neg F_{\text{fpu}}$: Integer register (not floating-point)
+- $V_{\mathrm{wb}}$ : Write-back stage has valid data
+- $R_{\mathrm{dst}} = R_{\mathrm{src}}$ : Destination register matches the source operand
+- $R_{\mathrm{dst}} \neq \texttt{x0}$ : Exclude hardwired zero register
+- $\neg F_{\mathrm{fpu}}$ : Integer register (not floating-point)
 
 > **Result**: The forwarding path converts Load-Use stalls from a mandatory 1-cycle penalty into a zero-cycle bypass, directly improving CPI toward the theoretical minimum of 1.0.
 
