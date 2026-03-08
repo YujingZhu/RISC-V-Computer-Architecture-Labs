@@ -283,7 +283,7 @@ With Forwarding (Bypass):
 
 #### Forwarding Conditions (Boolean Logic)
 
-$$\mathrm{fwd{\_}en} = V_{\mathrm{wb}} \wedge (R_{\mathrm{dst}} = R_{\mathrm{src}}) \wedge (R_{\mathrm{dst}} \neq \texttt{x0}) \wedge \neg F_{\mathrm{fpu}}$$
+$$fwd\_en = V_{wb} \wedge (R_{dst} = R_{src}) \wedge (R_{dst} \neq x0) \wedge \neg F_{fpu}$$
 
 Where:
 - $V_{\mathrm{wb}}$ : Write-back stage has valid data

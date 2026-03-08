@@ -278,7 +278,7 @@ wire disp_no_stall_rs2 = oitfrd_match_disprs2 & (~fwd_rs2_en);
 
 #### 前递条件（布尔逻辑）
 
-$$\mathrm{fwd{\_}en} = V_{\mathrm{wb}} \wedge (R_{\mathrm{dst}} = R_{\mathrm{src}}) \wedge (R_{\mathrm{dst}} \neq \texttt{x0}) \wedge \neg F_{\mathrm{fpu}}$$
+$$fwd\_en = V_{wb} \wedge (R_{dst} = R_{src}) \wedge (R_{dst} \neq x0) \wedge \neg F_{fpu}$$
 
 其中：
 - $V_{\mathrm{wb}}$ ：写回阶段有有效数据
