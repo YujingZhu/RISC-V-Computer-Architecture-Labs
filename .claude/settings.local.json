@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\(application|\\\\.S$\\)\")",
+      "Bash(grep -v \"Debug\\\\|hbird_sdk\\\\|\\\\.d$\\\\|\\\\.o$\")"
+    ]
+  }
+}

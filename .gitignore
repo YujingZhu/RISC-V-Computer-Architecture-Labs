@@ -1,0 +1,51 @@
+# Build artifacts
+Debug/
+Release/
+*.o
+*.d
+*.elf
+*.hex
+*.lst
+*.map
+
+# IDE files
+.project
+.cproject
+.settings/
+.clang-format
+.clangd
+.vscode/
+*.launch
+
+# FPGA binaries
+*.bit
+*.mcs
+
+# Large binary files
+*.mp4
+*.avi
+*.mov
+
+# Documents (keep source code only, except reports/ and references/)
+*.doc
+*.docx
+*.pptx
+*.pdf
+*.zip
+*.rar
+!reports/**/*.pdf
+!reports/**/*.docx
+!references/**/*.pdf
+!references/**/*.docx
+
+# Images (allow in reports/diagrams/)
+!reports/**/*.png
+!reports/**/*.jpg
+
+# OS files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# SDK (use as external dependency)
+hbird_sdk/
