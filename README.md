@@ -41,12 +41,6 @@
 | **Peripherals** | GPIO (6 LEDs + 6 Switches), UART 115200-8N1 |
 | **Debug** | JTAG (OpenOCD) |
 
-<p align="center">
-  <img src="reports/diagrams/Lab1/报告截图/Boardphoto.jpg" width="600" alt="Nuclei DDR200T FPGA Board" />
-  <br/>
-  <em>Nuclei DDR200T FPGA Development Board (HBirdv2 E203 SoC)</em>
-</p>
-
 ---
 
 ## Lab Overview & Key Metrics
@@ -124,6 +118,12 @@ REG32(GPIOA_PADOUT) |= LED_MASK;
 > **Design Pattern**: All GPIO writes use Read-Modify-Write (RMW) to preserve adjacent pin states — essential on shared MMIO registers.
 
 <p align="center">
+  <img src="reports/diagrams/Lab2/On-ChipHardware Logic.png" width="700" alt="On-Chip Hardware Logic: SoC internal bus and peripheral mapping" />
+  <br/>
+  <em>Fig. On-Chip Hardware Logic — SoC internal architecture with GPIOA / UART0 peripheral mapping</em>
+</p>
+
+<p align="center">
   <img src="reports/diagrams/Lab3/架构图/fig_mmio_map.png" width="700" alt="MMIO Architecture: RISC-V Core → System Bus → GPIOA / UART0" />
   <br/>
   <em>Fig. MMIO Architecture — CPU accesses GPIOA (0x1001_2000) and UART0 (0x1001_3000) via TileLink/APB bus</em>
@@ -136,9 +136,9 @@ REG32(GPIOA_PADOUT) |= LED_MASK;
 </p>
 
 <p align="center">
-  <img src="reports/diagrams/Lab2/截图/fig_hardware_switch_led_control1.jpg" width="400" alt="Hardware demo: switch controlling LEDs" />
+  <img src="reports/diagrams/Lab2/Timing Analysis UART Bit Width vs. CPU Clock Speed.png" width="600" alt="Timing Analysis: UART Bit Width vs CPU Clock Speed" />
   <br/>
-  <em>Fig. Hardware verification — switches controlling LEDs on the DDR200T board</em>
+  <em>Fig. UART Timing Analysis — Bit width calculation vs. CPU clock speed for 115200 baud rate</em>
 </p>
 
 ---
@@ -255,12 +255,6 @@ $$\eta_{\mathrm{CPU}} = 1 - \frac{N_{\mathrm{events}} \cdot T_{\mathrm{ISR}}}{T_
 
 > **Key Insight**: Polling wins on raw latency (28 vs. 59 cycles) but is fundamentally unscalable. The interrupt-driven model frees **98%+ CPU cycles** for computation — a 50× throughput gain in multi-task scenarios, at the cost of only 2.1× latency increase.
 
-<p align="center">
-  <img src="reports/diagrams/Lab3/Task3/photo_task3_stress.png" width="600" alt="Lab3 Task3 interrupt-driven system running on hardware" />
-  <br/>
-  <em>Fig. Live demo — interrupt-driven UART RX system running on DDR200T board with terminal output</em>
-</p>
-
 ---
 
 ## Lab 4 — CoreMark & Pipeline Optimization
@@ -290,6 +284,12 @@ $$\mathrm{CPI} = \frac{\mathrm{Cycles}}{\mathrm{Instructions}} = \frac{1{,}756{,
 > **Analysis**: CPI = 1.915 indicates that on average each instruction takes nearly 2 cycles — the ideal for a 2-stage pipeline is CPI = 1.0. The gap of 0.915 cycles/instruction is dominated by pipeline stalls.
 
 <p align="center">
+  <img src="reports/diagrams/Lab4/measurement_framework_arch.png" width="700" alt="Performance measurement framework architecture" />
+  <br/>
+  <em>Fig. Measurement framework — CSR-based instrumentation architecture for CoreMark profiling</em>
+</p>
+
+<p align="center">
   <img src="reports/diagrams/Lab4/实验截图/cpi_result.png" width="700" alt="CPI measurement result in Nuclei Studio IDE" />
   <br/>
   <em>Fig. CPI measurement — mcycle=1,756,951,756 / minstret=917,399,219 → CPI=1.915 (baseline)</em>
@@ -300,7 +300,7 @@ $$\mathrm{CPI} = \frac{\mathrm{Cycles}}{\mathrm{Instructions}} = \frac{1{,}756{,
 5 independent runs confirmed deterministic execution (σ = 0) on bare-metal FPGA. Stall sources ranked by impact:
 
 <p align="center">
-  <img src="reports/diagrams/Lab1/框架图/pipeline_hazard.png" width="700" alt="Pipeline hazard: control hazard with branch flush" />
+  <img src="reports/diagrams/Lab4/pipeline_hazard.png" width="700" alt="Pipeline hazard analysis" />
   <br/>
   <em>Fig. Control hazard in 2-stage pipeline — branch resolved at EX causes 1-cycle bubble (flush)</em>
 </p>
@@ -316,9 +316,9 @@ $$\mathrm{CPI} = \frac{\mathrm{Cycles}}{\mathrm{Instructions}} = \frac{1{,}756{,
 The core optimization: **bypass the register file** by forwarding the Load-Store Unit (LSU) write-back data directly to the dispatch stage, eliminating Load-Use stalls.
 
 <p align="center">
-  <img src="reports/diagrams/Lab4/实验截图/opt_forwarding_schematic.png" width="650" alt="Data forwarding bypass schematic" />
+  <img src="reports/diagrams/Lab4/datapath.png" width="650" alt="Data forwarding datapath schematic" />
   <br/>
-  <em>Fig. Data forwarding schematic — new bypass path from LSU write-back directly to FWD MUX at dispatch stage</em>
+  <em>Fig. Datapath with forwarding — bypass path from LSU write-back directly to FWD MUX at dispatch stage</em>
 </p>
 
 #### Forwarding Logic (Verilog)
@@ -390,7 +390,7 @@ Where:
 </p>
 
 <p align="center">
-  <img src="reports/diagrams/Lab4/实验截图/final_perf_comparison.png" width="600" alt="Performance comparison: baseline vs optimized" />
+  <img src="reports/diagrams/Lab4/final_perf_comparison1.png" width="600" alt="Performance comparison: baseline vs optimized" />
   <br/>
   <em>Fig. Performance gain — Load-Use forwarding: CoreMark +3.5%, IPC +3.4%, CPI −3.3%</em>
 </p>

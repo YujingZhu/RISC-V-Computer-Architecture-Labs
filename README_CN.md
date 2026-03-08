@@ -41,12 +41,6 @@
 | **外设** | GPIO（6 LED + 6 拨码开关）、UART 115200-8N1 |
 | **调试** | JTAG（OpenOCD） |
 
-<p align="center">
-  <img src="reports/diagrams/Lab1/报告截图/Boardphoto.jpg" width="600" alt="Nuclei DDR200T FPGA 开发板" />
-  <br/>
-  <em>图：Nuclei DDR200T FPGA 开发板（HBirdv2 E203 SoC）</em>
-</p>
-
 ---
 
 ## 实验总览与关键指标
@@ -124,6 +118,12 @@ REG32(GPIOA_PADOUT) |= LED_MASK;
 > **设计模式**：所有 GPIO 写操作采用"读-修改-写"（Read-Modify-Write, RMW）模式，保护共享 MMIO 寄存器上相邻引脚的状态不被破坏。
 
 <p align="center">
+  <img src="reports/diagrams/Lab2/On-ChipHardware Logic.png" width="700" alt="片上硬件逻辑：SoC 内部总线与外设映射" />
+  <br/>
+  <em>图：片上硬件逻辑 — SoC 内部架构及 GPIOA / UART0 外设映射</em>
+</p>
+
+<p align="center">
   <img src="reports/diagrams/Lab3/架构图/fig_mmio_map.png" width="700" alt="MMIO 架构：RISC-V Core → 系统总线 → GPIOA / UART0" />
   <br/>
   <em>图：MMIO 架构 — CPU 通过 TileLink/APB 总线访问 GPIOA (0x1001_2000) 和 UART0 (0x1001_3000)</em>
@@ -136,9 +136,9 @@ REG32(GPIOA_PADOUT) |= LED_MASK;
 </p>
 
 <p align="center">
-  <img src="reports/diagrams/Lab2/截图/fig_hardware_switch_led_control1.jpg" width="400" alt="硬件演示：拨码开关控制 LED" />
+  <img src="reports/diagrams/Lab2/Timing Analysis UART Bit Width vs. CPU Clock Speed.png" width="600" alt="UART 时序分析：位宽与 CPU 时钟频率" />
   <br/>
-  <em>图：硬件验证 — DDR200T 开发板上拨码开关控制 LED</em>
+  <em>图：UART 时序分析 — 115200 波特率下位宽计算与 CPU 时钟频率关系</em>
 </p>
 
 ---
@@ -253,12 +253,6 @@ $$\eta_{\mathrm{CPU}} = 1 - \frac{N_{\mathrm{events}} \cdot T_{\mathrm{ISR}}}{T_
 
 > **核心结论**：轮询在原始延迟上胜出（28 vs. 59 周期），但根本上不可扩展。中断驱动模型释放了 **98%+ 的 CPU 周期**用于计算 —— 在多任务场景下带来 50 倍吞吐量增益，代价仅为 2.1 倍的延迟增加。
 
-<p align="center">
-  <img src="reports/diagrams/Lab3/Task3/photo_task3_stress.png" width="600" alt="Lab3 Task3 中断驱动系统硬件运行" />
-  <br/>
-  <em>图：实机演示 — 中断驱动 UART RX 系统在 DDR200T 开发板上运行</em>
-</p>
-
 ---
 
 ## Lab 4 — CoreMark 与流水线优化
@@ -288,6 +282,12 @@ $$\mathrm{CPI} = \frac{\mathrm{Cycles}}{\mathrm{Instructions}} = \frac{1{,}756{,
 > **分析**：CPI = 1.915 表明平均每条指令消耗近 2 个周期 —— 二级流水线的理想值为 CPI = 1.0。0.915 周期/指令的差距主要由流水线停顿（Pipeline Stall）导致。
 
 <p align="center">
+  <img src="reports/diagrams/Lab4/measurement_framework_arch.png" width="700" alt="性能测量框架架构" />
+  <br/>
+  <em>图：测量框架 — 基于 CSR 的 CoreMark 性能插桩架构</em>
+</p>
+
+<p align="center">
   <img src="reports/diagrams/Lab4/实验截图/cpi_result.png" width="700" alt="CPI 测量结果" />
   <br/>
   <em>图：CPI 测量 — mcycle=1,756,951,756 / minstret=917,399,219 → CPI=1.915（基线）</em>
@@ -298,7 +298,7 @@ $$\mathrm{CPI} = \frac{\mathrm{Cycles}}{\mathrm{Instructions}} = \frac{1{,}756{,
 5 次独立运行确认裸机 FPGA 上执行完全确定性（标准差 σ = 0）。停顿来源按影响排序：
 
 <p align="center">
-  <img src="reports/diagrams/Lab1/框架图/pipeline_hazard.png" width="700" alt="流水线控制相关：分支冲刷" />
+  <img src="reports/diagrams/Lab4/pipeline_hazard.png" width="700" alt="流水线相关性分析" />
   <br/>
   <em>图：二级流水线控制相关 — 分支在 EX 阶段解析导致 1 周期气泡（冲刷）</em>
 </p>
@@ -314,9 +314,9 @@ $$\mathrm{CPI} = \frac{\mathrm{Cycles}}{\mathrm{Instructions}} = \frac{1{,}756{,
 核心优化：**旁路寄存器堆（Register File）**，将加载存储单元（LSU）写回数据直接前递到派发阶段（Dispatch Stage），消除 Load-Use 停顿。
 
 <p align="center">
-  <img src="reports/diagrams/Lab4/实验截图/opt_forwarding_schematic.png" width="650" alt="数据前递旁路示意图" />
+  <img src="reports/diagrams/Lab4/datapath.png" width="650" alt="数据前递数据通路示意图" />
   <br/>
-  <em>图：数据前递示意图 — 新增从 LSU 写回到 FWD MUX 的旁路路径</em>
+  <em>图：数据通路与前递 — 新增从 LSU 写回到 FWD MUX 的旁路路径</em>
 </p>
 
 #### 前递逻辑 (Verilog)
@@ -388,7 +388,7 @@ $$fwd\_en = V_{wb} \wedge (R_{dst} = R_{src}) \wedge (R_{dst} \neq x0) \wedge \n
 </p>
 
 <p align="center">
-  <img src="reports/diagrams/Lab4/实验截图/final_perf_comparison.png" width="600" alt="性能对比：基线 vs 优化" />
+  <img src="reports/diagrams/Lab4/final_perf_comparison1.png" width="600" alt="性能对比：基线 vs 优化" />
   <br/>
   <em>图：性能提升 — Load-Use 前递优化：CoreMark +3.5%，IPC +3.4%，CPI −3.3%</em>
 </p>
