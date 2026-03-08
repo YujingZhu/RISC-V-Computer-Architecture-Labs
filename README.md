@@ -41,8 +41,11 @@
 | **Peripherals** | GPIO (6 LEDs + 6 Switches), UART 115200-8N1 |
 | **Debug** | JTAG (OpenOCD) |
 
-<!-- Architecture diagram placeholder -->
-<!-- ![Platform Architecture](reports/diagrams/Lab3/架构图/fig_arch.png) -->
+<p align="center">
+  <img src="reports/diagrams/Lab1/报告截图/Boardphoto.jpg" width="600" alt="Nuclei DDR200T FPGA Board" />
+  <br/>
+  <em>Nuclei DDR200T FPGA Development Board (HBirdv2 E203 SoC)</em>
+</p>
 
 ---
 
@@ -75,6 +78,12 @@ loop:
 ```
 
 > **Calling Convention**: Argument in `a0`, return in `a0`. Callee uses only temporary registers (`t0`–`t1`) — no stack frame needed.
+
+<p align="center">
+  <img src="reports/diagrams/Lab1/实验截图/Sum_Result_Register_a0.png" width="700" alt="Lab1 Debug: sum_to_n result in register a0 = 55" />
+  <br/>
+  <em>Fig. Register-level debugging — <code>sum_to_n(10)</code> returns 55 in <code>a0</code>, with <code>t0=55</code> (accumulator) and <code>t1=11</code> (counter)</em>
+</p>
 
 ---
 
@@ -114,6 +123,24 @@ REG32(GPIOA_PADOUT) |= LED_MASK;
 
 > **Design Pattern**: All GPIO writes use Read-Modify-Write (RMW) to preserve adjacent pin states — essential on shared MMIO registers.
 
+<p align="center">
+  <img src="reports/diagrams/Lab3/架构图/fig_mmio_map.png" width="700" alt="MMIO Architecture: RISC-V Core → System Bus → GPIOA / UART0" />
+  <br/>
+  <em>Fig. MMIO Architecture — CPU accesses GPIOA (0x1001_2000) and UART0 (0x1001_3000) via TileLink/APB bus</em>
+</p>
+
+<p align="center">
+  <img src="reports/diagrams/Lab2/bit_shift.png" width="500" alt="Switch-to-LED bit shift mapping" />
+  <br/>
+  <em>Fig. Switch→LED bit alignment — 6-bit logical right shift maps SW[31:26] to LED[25:20]</em>
+</p>
+
+<p align="center">
+  <img src="reports/diagrams/Lab2/截图/fig_hardware_switch_led_control1.jpg" width="400" alt="Hardware demo: switch controlling LEDs" />
+  <br/>
+  <em>Fig. Hardware verification — switches controlling LEDs on the DDR200T board</em>
+</p>
+
 ---
 
 ## Lab 3 — Interrupt Hierarchy: From Polling to Interrupt-Driven
@@ -136,6 +163,12 @@ Tight-loop GPIO polling with cycle-accurate measurement via `mcycle` CSR.
 ### Task 2 — Trap Framework (MSI)
 
 Assembly-level trap entry (`lab3_trap_entry.S`) saving 16 caller-saved registers on a 64-byte stack frame:
+
+<p align="center">
+  <img src="reports/diagrams/Lab3/架构图/fig_stack.png" width="450" alt="64-byte trap stack frame layout" />
+  <br/>
+  <em>Fig. Trap stack frame layout — 16 caller-saved registers in 64 bytes</em>
+</p>
 
 ```
 ┌─────────────────────────────────────┐
@@ -162,6 +195,24 @@ mstatus |= MSTATUS_MIE        // Global interrupt enable
 
 ### Task 3 — Full Interrupt-Driven System (PLIC + UART RX)
 
+<p align="center">
+  <img src="reports/diagrams/Lab3/架构图/fig_arch.png" width="700" alt="PLIC interrupt architecture" />
+  <br/>
+  <em>Fig. PLIC interrupt architecture — UART0 (ID=3) and GPIOA (ID=15) → PLIC → RISC-V Core</em>
+</p>
+
+<p align="center">
+  <img src="reports/diagrams/Lab3/架构图/fig_flowchart.png" width="500" alt="Interrupt handler flowchart" />
+  <br/>
+  <em>Fig. ISR dispatch flowchart — from hardware IRQ to PLIC claim/complete handshake</em>
+</p>
+
+<p align="center">
+  <img src="reports/diagrams/Lab3/架构图/fig_ring_buffer.png" width="400" alt="UART RX ring buffer" />
+  <br/>
+  <em>Fig. UART RX ring buffer — ISR (producer) writes, main loop (consumer) reads, lock-free design</em>
+</p>
+
 **Measured Performance**:
 
 | Metric | Value |
@@ -171,6 +222,12 @@ mstatus |= MSTATUS_MIE        // Global interrupt enable
 | CPU idle ratio | **>99%** |
 
 ### Latency Model: Polling vs. Interrupt-Driven
+
+<p align="center">
+  <img src="reports/diagrams/Lab3/架构图/fig_timeline.png" width="700" alt="Polling vs Interrupt timing comparison" />
+  <br/>
+  <em>Fig. Timing comparison — Polling (stochastic, 28-cycle avg) vs. Interrupt (deterministic, ~60-cycle fixed)</em>
+</p>
 
 The fundamental latency model for each paradigm:
 
@@ -197,6 +254,12 @@ $$\eta_{\mathrm{CPU}} = 1 - \frac{N_{\mathrm{events}} \cdot T_{\mathrm{ISR}}}{T_
 | Code Complexity | Simple loop | ISR + CSR + context save | Polling |
 
 > **Key Insight**: Polling wins on raw latency (28 vs. 59 cycles) but is fundamentally unscalable. The interrupt-driven model frees **98%+ CPU cycles** for computation — a 50× throughput gain in multi-task scenarios, at the cost of only 2.1× latency increase.
+
+<p align="center">
+  <img src="reports/diagrams/Lab3/Task3/photo_task3_stress.png" width="600" alt="Lab3 Task3 interrupt-driven system running on hardware" />
+  <br/>
+  <em>Fig. Live demo — interrupt-driven UART RX system running on DDR200T board with terminal output</em>
+</p>
 
 ---
 
@@ -226,9 +289,21 @@ $$\mathrm{CPI} = \frac{\mathrm{Cycles}}{\mathrm{Instructions}} = \frac{1{,}756{,
 
 > **Analysis**: CPI = 1.915 indicates that on average each instruction takes nearly 2 cycles — the ideal for a 2-stage pipeline is CPI = 1.0. The gap of 0.915 cycles/instruction is dominated by pipeline stalls.
 
+<p align="center">
+  <img src="reports/diagrams/Lab4/实验截图/cpi_result.png" width="700" alt="CPI measurement result in Nuclei Studio IDE" />
+  <br/>
+  <em>Fig. CPI measurement — mcycle=1,756,951,756 / minstret=917,399,219 → CPI=1.915 (baseline)</em>
+</p>
+
 ### Phase C — Bottleneck Identification
 
 5 independent runs confirmed deterministic execution (σ = 0) on bare-metal FPGA. Stall sources ranked by impact:
+
+<p align="center">
+  <img src="reports/diagrams/Lab1/框架图/pipeline_hazard.png" width="700" alt="Pipeline hazard: control hazard with branch flush" />
+  <br/>
+  <em>Fig. Control hazard in 2-stage pipeline — branch resolved at EX causes 1-cycle bubble (flush)</em>
+</p>
 
 | Hazard Type | Mechanism | Estimated Impact |
 |-------------|-----------|-----------------|
@@ -239,6 +314,12 @@ $$\mathrm{CPI} = \frac{\mathrm{Cycles}}{\mathrm{Instructions}} = \frac{1{,}756{,
 ### Phase D — RTL Optimization: Data Forwarding in `e203_exu.v`
 
 The core optimization: **bypass the register file** by forwarding the Load-Store Unit (LSU) write-back data directly to the dispatch stage, eliminating Load-Use stalls.
+
+<p align="center">
+  <img src="reports/diagrams/Lab4/实验截图/opt_forwarding_schematic.png" width="650" alt="Data forwarding bypass schematic" />
+  <br/>
+  <em>Fig. Data forwarding schematic — new bypass path from LSU write-back directly to FWD MUX at dispatch stage</em>
+</p>
 
 #### Forwarding Logic (Verilog)
 
@@ -302,11 +383,17 @@ Where:
 -falign-jumps=4 -falign-loops=4
 ```
 
-<!-- CoreMark terminal output screenshot placeholder -->
-<!-- ![CoreMark Result](reports/diagrams/Lab4/实验截图/opt_terminal_output.png) -->
+<p align="center">
+  <img src="reports/diagrams/Lab4/实验截图/opt_terminal_output.png" width="700" alt="Optimized CoreMark terminal output" />
+  <br/>
+  <em>Fig. Optimized CoreMark result — Score=37.691, CPI=1.851, IPC=0.540 (with data forwarding enabled)</em>
+</p>
 
-<!-- Pipeline forwarding schematic placeholder -->
-<!-- ![Forwarding Schematic](reports/diagrams/Lab4/实验截图/opt_forwarding_schematic.png) -->
+<p align="center">
+  <img src="reports/diagrams/Lab4/实验截图/final_perf_comparison.png" width="600" alt="Performance comparison: baseline vs optimized" />
+  <br/>
+  <em>Fig. Performance gain — Load-Use forwarding: CoreMark +3.5%, IPC +3.4%, CPI −3.3%</em>
+</p>
 
 ---
 

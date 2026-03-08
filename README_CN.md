@@ -41,6 +41,12 @@
 | **外设** | GPIO（6 LED + 6 拨码开关）、UART 115200-8N1 |
 | **调试** | JTAG（OpenOCD） |
 
+<p align="center">
+  <img src="reports/diagrams/Lab1/报告截图/Boardphoto.jpg" width="600" alt="Nuclei DDR200T FPGA 开发板" />
+  <br/>
+  <em>图：Nuclei DDR200T FPGA 开发板（HBirdv2 E203 SoC）</em>
+</p>
+
 ---
 
 ## 实验总览与关键指标
@@ -72,6 +78,12 @@ loop:
 ```
 
 > **调用规约 (Calling Convention)**：参数通过 `a0` 传入，返回值通过 `a0` 传出。被调用函数仅使用临时寄存器（`t0`–`t1`），无需栈帧。
+
+<p align="center">
+  <img src="reports/diagrams/Lab1/实验截图/Sum_Result_Register_a0.png" width="700" alt="Lab1 调试：sum_to_n 结果 a0 = 55" />
+  <br/>
+  <em>图：寄存器级调试 — <code>sum_to_n(10)</code> 返回值 55 存于 <code>a0</code>，<code>t0=55</code>（累加器）、<code>t1=11</code>（计数器）</em>
+</p>
 
 ---
 
@@ -111,6 +123,24 @@ REG32(GPIOA_PADOUT) |= LED_MASK;
 
 > **设计模式**：所有 GPIO 写操作采用"读-修改-写"（Read-Modify-Write, RMW）模式，保护共享 MMIO 寄存器上相邻引脚的状态不被破坏。
 
+<p align="center">
+  <img src="reports/diagrams/Lab3/架构图/fig_mmio_map.png" width="700" alt="MMIO 架构：RISC-V Core → 系统总线 → GPIOA / UART0" />
+  <br/>
+  <em>图：MMIO 架构 — CPU 通过 TileLink/APB 总线访问 GPIOA (0x1001_2000) 和 UART0 (0x1001_3000)</em>
+</p>
+
+<p align="center">
+  <img src="reports/diagrams/Lab2/bit_shift.png" width="500" alt="拨码开关到 LED 的位移映射" />
+  <br/>
+  <em>图：Switch→LED 位对齐 — 6 位逻辑右移将 SW[31:26] 映射到 LED[25:20]</em>
+</p>
+
+<p align="center">
+  <img src="reports/diagrams/Lab2/截图/fig_hardware_switch_led_control1.jpg" width="400" alt="硬件演示：拨码开关控制 LED" />
+  <br/>
+  <em>图：硬件验证 — DDR200T 开发板上拨码开关控制 LED</em>
+</p>
+
 ---
 
 ## Lab 3 — 中断层次体系：从轮询到中断驱动
@@ -133,6 +163,12 @@ REG32(GPIOA_PADOUT) |= LED_MASK;
 ### Task 2 — 陷阱框架 (Trap Framework, MSI)
 
 汇编级陷阱入口 (`lab3_trap_entry.S`)，在 64 字节栈帧上保存 16 个调用者保存寄存器：
+
+<p align="center">
+  <img src="reports/diagrams/Lab3/架构图/fig_stack.png" width="450" alt="64 字节陷阱栈帧布局" />
+  <br/>
+  <em>图：陷阱栈帧布局 — 16 个调用者保存寄存器，共 64 字节</em>
+</p>
 
 ```
 ┌─────────────────────────────────────┐
@@ -159,6 +195,24 @@ mstatus |= MSTATUS_MIE         // 全局中断使能
 
 ### Task 3 — 完整中断驱动系统 (PLIC + UART RX)
 
+<p align="center">
+  <img src="reports/diagrams/Lab3/架构图/fig_arch.png" width="700" alt="PLIC 中断架构" />
+  <br/>
+  <em>图：PLIC 中断架构 — UART0 (ID=3) 和 GPIOA (ID=15) → PLIC 仲裁 → RISC-V Core</em>
+</p>
+
+<p align="center">
+  <img src="reports/diagrams/Lab3/架构图/fig_flowchart.png" width="500" alt="中断处理流程图" />
+  <br/>
+  <em>图：ISR 分发流程图 — 从硬件 IRQ 到 PLIC claim/complete 握手协议</em>
+</p>
+
+<p align="center">
+  <img src="reports/diagrams/Lab3/架构图/fig_ring_buffer.png" width="400" alt="UART RX 环形缓冲区" />
+  <br/>
+  <em>图：UART RX 环形缓冲区 — ISR（生产者）写入，主循环（消费者）读取，无锁设计</em>
+</p>
+
 **实测性能**：
 
 | 指标 | 数值 |
@@ -168,6 +222,12 @@ mstatus |= MSTATUS_MIE         // 全局中断使能
 | CPU 空闲率 | **>99%** |
 
 ### 延迟模型：轮询 vs. 中断驱动
+
+<p align="center">
+  <img src="reports/diagrams/Lab3/架构图/fig_timeline.png" width="700" alt="轮询与中断时序对比" />
+  <br/>
+  <em>图：时序对比 — 轮询（随机延迟，平均 28 周期）vs. 中断（确定性延迟，固定 ~60 周期）</em>
+</p>
 
 **轮询模式 (Polling)**：
 
@@ -192,6 +252,12 @@ $$\eta_{\mathrm{CPU}} = 1 - \frac{N_{\mathrm{events}} \cdot T_{\mathrm{ISR}}}{T_
 | 代码复杂度 | 简单循环 | ISR + CSR + 上下文保存 | 轮询 |
 
 > **核心结论**：轮询在原始延迟上胜出（28 vs. 59 周期），但根本上不可扩展。中断驱动模型释放了 **98%+ 的 CPU 周期**用于计算 —— 在多任务场景下带来 50 倍吞吐量增益，代价仅为 2.1 倍的延迟增加。
+
+<p align="center">
+  <img src="reports/diagrams/Lab3/Task3/photo_task3_stress.png" width="600" alt="Lab3 Task3 中断驱动系统硬件运行" />
+  <br/>
+  <em>图：实机演示 — 中断驱动 UART RX 系统在 DDR200T 开发板上运行</em>
+</p>
 
 ---
 
@@ -221,9 +287,21 @@ $$\mathrm{CPI} = \frac{\mathrm{Cycles}}{\mathrm{Instructions}} = \frac{1{,}756{,
 
 > **分析**：CPI = 1.915 表明平均每条指令消耗近 2 个周期 —— 二级流水线的理想值为 CPI = 1.0。0.915 周期/指令的差距主要由流水线停顿（Pipeline Stall）导致。
 
+<p align="center">
+  <img src="reports/diagrams/Lab4/实验截图/cpi_result.png" width="700" alt="CPI 测量结果" />
+  <br/>
+  <em>图：CPI 测量 — mcycle=1,756,951,756 / minstret=917,399,219 → CPI=1.915（基线）</em>
+</p>
+
 ### 阶段 C — 瓶颈识别
 
 5 次独立运行确认裸机 FPGA 上执行完全确定性（标准差 σ = 0）。停顿来源按影响排序：
+
+<p align="center">
+  <img src="reports/diagrams/Lab1/框架图/pipeline_hazard.png" width="700" alt="流水线控制相关：分支冲刷" />
+  <br/>
+  <em>图：二级流水线控制相关 — 分支在 EX 阶段解析导致 1 周期气泡（冲刷）</em>
+</p>
 
 | 相关性类型 (Hazard Type) | 机制 | 估计影响 |
 |--------------------------|------|----------|
@@ -234,6 +312,12 @@ $$\mathrm{CPI} = \frac{\mathrm{Cycles}}{\mathrm{Instructions}} = \frac{1{,}756{,
 ### 阶段 D — RTL 优化：`e203_exu.v` 中的数据前递
 
 核心优化：**旁路寄存器堆（Register File）**，将加载存储单元（LSU）写回数据直接前递到派发阶段（Dispatch Stage），消除 Load-Use 停顿。
+
+<p align="center">
+  <img src="reports/diagrams/Lab4/实验截图/opt_forwarding_schematic.png" width="650" alt="数据前递旁路示意图" />
+  <br/>
+  <em>图：数据前递示意图 — 新增从 LSU 写回到 FWD MUX 的旁路路径</em>
+</p>
 
 #### 前递逻辑 (Verilog)
 
@@ -296,6 +380,18 @@ $$fwd\_en = V_{wb} \wedge (R_{dst} = R_{src}) \wedge (R_{dst} \neq x0) \wedge \n
 -finline-functions -falign-functions=4
 -falign-jumps=4 -falign-loops=4
 ```
+
+<p align="center">
+  <img src="reports/diagrams/Lab4/实验截图/opt_terminal_output.png" width="700" alt="优化后 CoreMark 终端输出" />
+  <br/>
+  <em>图：优化后 CoreMark 结果 — Score=37.691，CPI=1.851，IPC=0.540（启用数据前递）</em>
+</p>
+
+<p align="center">
+  <img src="reports/diagrams/Lab4/实验截图/final_perf_comparison.png" width="600" alt="性能对比：基线 vs 优化" />
+  <br/>
+  <em>图：性能提升 — Load-Use 前递优化：CoreMark +3.5%，IPC +3.4%，CPI −3.3%</em>
+</p>
 
 ---
 
